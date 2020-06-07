@@ -5,6 +5,9 @@ const input = require('./Create_Input');
 const output = require('./Create_Output');
 
 class transaction{
+    constructor(Key){
+    this.Key = Key;
+    }
     Num_Input = Number(prompt('No of Inputs: '));
     Num_Output = Number(prompt('No of Outputs: '));
     Output_Data_Buf = this.Output_Data;
@@ -16,7 +19,7 @@ class transaction{
         var arr = [];
         for (var i = 0;i < this.Num_Input;i++){
             console.log('Input: ',i+1)
-            var new_Input = new input(Hash);
+            var new_Input = new input(Hash,this.Key);
             arr.push(new_Input.Buffer);
         }
         return Buffer.concat(arr)
