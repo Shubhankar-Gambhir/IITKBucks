@@ -1,9 +1,9 @@
 const prompt = require('prompt-sync')({sigint: true});
 const crypto = require('crypto')
-const fs = require('fs');
 class input{
-    constructor(Hash){
+    constructor(Hash,Key){
         this.Output_Hash = Hash;
+        this.Key = Key;
     }
     Transaction_ID = prompt('    Transaction_ID: ');
     Index = Number(prompt('    Index: '));
@@ -15,7 +15,6 @@ class input{
         var Hbuf = Buffer.alloc(32,this.Output_Hash,'hex');
         var arr = [Tbuf,Ibuf,Hbuf];
         var byte = Buffer.concat(arr);
-        var Key = fs.readFileSync('../Private_Keys/p1_private.pem');// write key here
         const sign = crypto.createSign('SHA256').update(byte).sign({key: Key, padding:crypto.constants.RSA_PKCS1_PSS_PADDING},'hex')
         return sign;
     }
