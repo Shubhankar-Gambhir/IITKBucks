@@ -14,3 +14,5 @@ It will verify Transaction
 
 After Verification
 * It will update our file of unused outputs by adding new outputs and removing the outputs used as inputs.
+
+
