@@ -5,3 +5,4 @@ To run
 ```
 $ node read.js
 ```
+and then write the name of Transaction File
