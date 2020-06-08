@@ -15,7 +15,7 @@ class input{
         var Hbuf = Buffer.alloc(32,this.Output_Hash,'hex');
         var arr = [Tbuf,Ibuf,Hbuf];
         var byte = Buffer.concat(arr);
-        var Key = fs.readFileSync('../Private_Keys/p1_private.pem');// write key here
+        var Key = fs.readFileSync('./Private_Keys/p1_private.pem');// write key here
         const sign = crypto.createSign('SHA256').update(byte).sign({key: Key, padding:crypto.constants.RSA_PKCS1_PSS_PADDING},'hex')
         return sign;
     }
