@@ -11,16 +11,13 @@ class transaction{
         this.Output_Data = new Output_Data(this.Input_Data.Remaining_Buf);
     }
     Verify_Transaction(){
-        var flag = 1;
-        if(this.Input_Data.Total_coins<this.Output_Data.Total_coins){
-            flag = 0;
-        }
+        var flag = true;
+        if(this.Input_Data.Total_coins<this.Output_Data.Total_coins){flag = false;}
         flag = this.Input_Data.Verify(flag);
         flag = this.Input_Data.Check_Inputs(flag);
-        if(flag){return true;}
-        else{return false}
+        return flag;
     }
-    Store_Output(){
+    Update_Output(){
         var New_Output = this.Input_Data.Updated_Map.set(this.Transaction_ID,this.Output_Data.Output_Data_Map);
         for(let [Transaction_ID,Data] of New_Output){
             for(let[Index,Output]  of Data){
@@ -35,8 +32,8 @@ class transaction{
     }
     Display(){
         console.log('Transaction_ID: ',this.Transaction_ID);
-        this.Input_Data.Display;
-        this.Output_Data.Display
+        this.Input_Data.Display ;
+        this.Output_Data.Display ;
     }
 }
 

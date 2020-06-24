@@ -9,6 +9,7 @@ var Byte = fs.readFileSync(file);
 var Transaction = new transaction(Byte);
 if(Transaction.Verify_Transaction()){
     Transaction.Store_Output();  
+    Transaction.Display();
 }
-//Transaction.Display();
+
 

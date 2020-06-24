@@ -6,9 +6,10 @@ class Input_Data{
     constructor(Byte){
         this.Byte = Byte;
     }
-    get Num_Input(){
-        var N_Input = this.Byte.slice(0,4).readUInt32BE(0);
-        return N_Input;
+    get Num_Input(){return this.Byte.slice(0,4).readUInt32BE(0);}
+    get Remaining_Buf(){
+        if(this.Num_Input){return this.Input_Data_Arr[this.Num_Input-1].New_buf;}
+        else{return this.Byte.slice(4);}
     }
     get Input_Data_Arr(){
         var Data_Arr = [];
@@ -16,20 +17,17 @@ class Input_Data{
         for(var i = 0; i < this.Num_Input;i++){
             var New_Input = new input(Buf);
             Data_Arr.push(New_Input);
-            Buf = New_Input.New_buf ;
+            Buf = New_Input.New_buf;
         }
         return Data_Arr;
     }
-    get Remaining_Buf(){
-        return this.Input_Data_Arr[this.Num_Input-1].New_buf;
-    }
     get Display(){
         console.log('No of Input: ',this.Num_Input);
-            for(var i = 0; i < this.Num_Input;i++){this.Input_Data_Arr[i].Display(i)}
+            for(var i = 0; i < this.Num_Input;i++){this.Input_Data_Arr[i].Display(i);}
     }
     get Total_coins(){
-         var Coins = BigInt(0)
-        for(var i = 0; i < this.Num_Input;i++){Coins +=  this.Input_Data_Arr[i].Coins;}
+        var Coins = BigInt(0);
+        for(var i = 0; i < this.Num_Input;i++){ Coins +=  this.Input_Data_Arr[i].Coins; }
         return Coins;
     }
     get Updated_Map(){
@@ -37,22 +35,18 @@ class Input_Data{
         for(var i = 0; i < this.Num_Input;i++){
             Unused_Outputs.get(this.Input_Data_Arr[i].Transaction_ID).delete(this.Input_Data_Arr[i].Index.toString())
             if(Unused_Outputs.get(this.Input_Data_Arr[i].Transaction_ID).size == 0){
-                Unused_Outputs.delete(this.Input_Data_Arr[i].Transaction_ID)   
+                Unused_Outputs.delete(this.Input_Data_Arr[i].Transaction_ID);  
             }
         }
         return Unused_Outputs;
     }
     Verify(flag){
         var Hash_Buf = Buffer.from(crypto.createHash('SHA256').update(this.Remaining_Buf).digest("hex"),'hex');
-        for(var i = 0; i < this.Num_Input ;i++){
-            if(!this.Input_Data_Arr[i].Verify_Signature(Hash_Buf)){flag = 0;}
-        }
+        for(var i = 0; i < this.Num_Input ;i++){if(!this.Input_Data_Arr[i].Verify_Signature(Hash_Buf)){flag = false;}}
         return flag;
     } 
     Check_Inputs(flag){
-        for(var i = 0; i < this.Num_Input;i++){
-            if(!this.Input_Data_Arr[i].Check_Inputs()){flag = 0;}
-        }
+        for(var i = 0; i < this.Num_Input;i++){if(!this.Input_Data_Arr[i].Check_Inputs()){flag = false;}}
         return flag;
     } 
 }

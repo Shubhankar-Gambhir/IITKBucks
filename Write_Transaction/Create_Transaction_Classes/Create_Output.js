@@ -10,8 +10,10 @@ class output{
     
     get Buffer(){
         var biguint = BigInt(this.Coins);
-        var Cbuf = Buffer.alloc(8).writeBigUInt64BE(biguint,0,8);
-        var Lbuf = Buffer.alloc(4).writeUInt32BE(this.Length,0,32);
+        var Cbuf = Buffer.alloc(8);
+        Cbuf.writeBigUInt64BE(biguint,0,8);
+        var Lbuf = Buffer.alloc(4);
+        Lbuf.writeUInt32BE(this.Length,0,32);
         var Pbuf = Buffer.alloc(this.Length,this.Public_key,"utf-8");
         var buf = Buffer.concat([Cbuf,Lbuf,Pbuf]);
 

@@ -5,9 +5,7 @@ class Output_Data{
         this.Byte = Byte;
     }
 
-    get Num_Output(){
-         return this.Byte.slice(0,4).readUInt32BE(0);
-    }
+    get Num_Output(){return this.Byte.slice(0,4).readUInt32BE(0);}
     get Output_Data_Arr(){
         var Data_Arr= [];
         var Buf = this.Byte.slice(4);
@@ -23,7 +21,7 @@ class Output_Data{
             for(var i = 0; i < this.Num_Output;i++){this.Output_Data_Arr[i].Display(i);}
     }
     get Total_coins(){
-         var Coins = BigInt(0)
+        var Coins = BigInt(0);
         for(var i = 0; i < this.Num_Output;i++){Coins +=  this.Output_Data_Arr[i].Coin;}
         return Coins;
     }

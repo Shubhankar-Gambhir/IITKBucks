@@ -3,7 +3,7 @@ const transaction = require('../../Read_Transaction/Read_Transaction_Classes/Rea
 class Block{
     constructor(Byte){
         this.Head = Buffer.from(Byte).slice(0,116);
-        this.Byte = Buffer.from(Byte);
+        this.Byte = Buffer.from(Byte).slice(116);
         this.Index = this.Head.slice(0,4).readUInt32BE(0);
         this.Parent_Hash = this.Head.slice(4,36).toString('hex');
         this.Current_Hash = this.Head.slice(36,68).toString('hex');

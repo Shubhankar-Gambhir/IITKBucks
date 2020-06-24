@@ -1,26 +1,12 @@
 class output{
     constructor(Buf){
         this.Buf = Buf;
+        this.Coin = Buf.slice(0,8).readBigUInt64BE(0);
+        this.Length = Buf.slice(8,12).readUInt32BE(0);
+        this.Key = Buf.slice(12, 12 + this.Length).toString('utf8');
+        this.New_buf = Buf.slice(12 + this.Length);
     }
-    get Coin(){
-        var Cbuf =  this.Buf.slice(0,8);
-        var Coins = Cbuf.readBigUInt64BE(0);
-        return Coins ;
-    }
-    get Length(){
-        var Lbuf =  this.Buf.slice(8,12);
-        var Len = Lbuf.readUInt32BE(0);
-        return Len;
-    }
-    get Key(){
-        var Pbuf = this.Buf.slice(12, 12 + this.Length);
-        var P_Key = Pbuf.toString('utf8');
-        return P_Key;
-    }
-    get New_buf(){
-        var Nbuf = this.Buf.slice(12 + this.Length);
-        return Nbuf;
-    }
+    
     get Output_Map(){
         var Obj =  new Map();
         Obj.set('Coin',this.Coin.toString())
