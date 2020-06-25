@@ -9,10 +9,11 @@ class transaction{
         this.Transaction_ID = crypto.createHash('SHA256').update(this.Byte).digest('hex');
         this.Input_Data = new Input_Data(this.Byte);
         this.Output_Data = new Output_Data(this.Input_Data.Remaining_Buf);
+        //this.Transaction_Fee = this.Input_Data.Total_coins - this.Output_Data.Total_coins ;
     }
     Verify_Transaction(){
         var flag = true;
-        if(this.Input_Data.Total_coins<this.Output_Data.Total_coins){flag = false;}
+        if(this.Transaction_Fee<0){flag = false;}
         flag = this.Input_Data.Verify(flag);
         flag = this.Input_Data.Check_Inputs(flag);
         return flag;

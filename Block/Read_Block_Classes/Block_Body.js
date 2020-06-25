@@ -3,10 +3,10 @@ const transaction = require('../../Read_Transaction/Read_Transaction_Classes/Rea
 class Block{
     constructor(Byte){
         this.Head = Buffer.from(Byte).slice(0,116);
-        this.Byte = Buffer.from(Byte);
+        this.Byte = Buffer.from(Byte.slice(116));
         this.Index = this.Head.slice(0,4).readUInt32BE(0);
         this.Parent_Hash = this.Head.slice(4,36).toString('hex');
-        this.Current_Hash = this.Head.slice(36,68).toString('hex');
+        this.Body_Hash = this.Head.slice(36,68).toString('hex');
         this.Target = this.Head.slice(68,100).toString('hex');
         this.Time_Stamp = this.Head.slice(100,108).readBigUInt64BE(0);
         this.Nonce = this.Head.slice(108,116).readBigInt64BE(0);
@@ -23,13 +23,19 @@ class Block{
         }
         return Data_Arr;
     }
-    get Verify_Transactions(){
+    Verify_Transactions(){
         flag = true;
         for(var i = 0; i < this.Num_Transactions;i++) if(flag) flag = this.Transaction_Data[i].Verify_Transaction();
         return flag;
     }
 
-    get Display(){
+    Display(){
+        console.log('Index: ',this.Index);
+        console.log('Parent Hash: ',this.Parent_Hash);
+        console.log('Body Hash: ',this.Body_Hash);
+        console.log('Target Value: ',this.Target);
+        console.log('Time Stamp: ',this.Time_Stamp);
+        console.log('Nonce: ',this.Nonce);
         console.log('No of Transactions: ',this.Num_Transactions);
         for(var i = 0; i < this.Num_Transactions;i++){this.Transaction_Data[i].Display();}
     }

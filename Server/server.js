@@ -3,10 +3,12 @@ const bodyParser = require ('body-parser');
 const fs = require('fs');
 
 const Transaction = require('../Write_Transaction/Create_Transaction_Classes/Create_Transaction.js');
-const Block = require('../Block/Read_Block_Classes/Block_Body.js');
-const initialization = require('./initialization');
+const Block = require('../Block/Read_Block_Classes/Block_Body');
+const Create_Block = require('../Block/Create_Block_Classes/Block')
+const initialization = require('./function');
 
 let known_nodes = ['http://8c0090bc.ngrok.io' ,'http://52d3004ed431.ngrok.io'];//temporary urls
+var Index = 0
 
 // var peers = initialization.get_Peers(known_nodes);
 // var Pending_Transactions = initialization.get_Pending_Transaction(peers);
@@ -23,13 +25,9 @@ var Num_Blocks = 0;
 
 app.get('/add/:Block_Index',function(req,res){
     var File_name = '../Blocks/Block' + req.params.Block_Index.toString()+'.dat' ;
-    var Byte = Buffer.from(fs.readFileSync(File_name));
-    Byte = Uint8Array.from(Byte);
-    Byte = Array.from(Byte);
-    //res.setHeader("Content-Type", "application/octet-stream");
-    console.log(Byte);
+    var Byte = fs.readFileSync(File_name);
+    res.setHeader("Content-Type", "application/octet-stream");
     res.send(Byte);
-    //res.sendFile(File_name,{ root : __dirname + '/../'});
 })
 
 app.get('/getPendingTransactions',function(req,res){
@@ -83,6 +81,13 @@ app.post('/newTransaction',function(req,res){
         res.send('Transaction Added');
     }
 })
+// app.post('/CreateBlock',function (req,res) {
+//     Index++
+//     var block = new Create_Block(Index,'0000f00000000000000000000000000000000000000000000000000000000000',Pending_Transactions,'../Blocks');
+//     console.log(block.Block_Buf)
+//     fs.writeFileSync('../Blocks/Block'+ Index+'.dat',block.Block_Buf);
+//     res.send(block);
+// })
 
 
 var server = app.listen(8080, function () {
