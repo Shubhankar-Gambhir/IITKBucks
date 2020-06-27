@@ -4,38 +4,43 @@ const crypto = require('crypto');
 const Transaction = require('../Write_Transaction/Create_Transaction_Classes/Create_Transaction.js');
 const Block = require('../Block/Read_Block_Classes/Block.js');
 
-module.exports.get_Peers = function get_Peers (peers_arr,peers_lim){
+async function get_Peers (peers_arr,peers_lim,My_url){
     let peers = [];
-    for(let url of peers_arr){       
-        axios.post(url + '/newPeer').then(function(res){      // Add as peer
-            if(res.status == 200 ) peers.push(url);
-        }).catch(function(error){console.error(error.response.request._response );})
-        if(peers.length >= peers_lim){return peers;}
+    for(let url of peers_arr){      
+        await axios.post(url + '/newPeer',{"url": My_url},{headers: {'Content-Type': 'application/json'}})
+        .then(function (res) {
+            if(peers.length >= peers_lim){return peers};
+            if(res.status == 200){peers.push(url)}; 
+        })
+        .catch(function(error){console.error(error)});
     }
-
+    var new_peers_lim = peers_lim - peers.length;
     if(peers.length < peers_lim){       
         var Potential_Peers = [];
         for(let url of peers_arr){
-            axios.get(url +'/getPeers').then(function(res){      // Find potential peers
-                Potential_Peers.concat(res.data.peers);
-            }).catch(function(error){console.error(error.response.request._response );}) 
-        }
-        Potential_Peers = Potential_Peers.filter(function(value, index, self) { // filter for distinct elements
-            return self.indexOf(value) === index;
+            await axios.get(url +'/getPeers')                                                   // Get potential peers from peers
+            .then(function(res){Potential_Peers = [...Potential_Peers,...res.data.peers]})    // Add them to the list of potential peers
+            .catch(function(error){console.error(error)});
+        }                                                        
+        Potential_Peers = Potential_Peers.filter(function(value, index, self) {return self.indexOf(value) === index;}) // remove repeated elements 
+        Potential_Peers = Potential_Peers.filter(function(item) {return !peers.includes(item);})                       // remove elements of peer
+        Potential_Peers = Potential_Peers.filter(function(a) {return a != My_url;})                                    // remove self
+        await get_Peers(Potential_Peers,new_peers_lim,My_url)     // Get peers from potential peers
+        .then(function (Arr) {                                    // Add them to the list of peers
+            peers = [...peers,...Arr];                            
+            return peers;
         })
-        var new_peers_lim = peers_lim - peers.length
-        var Arr = get_Peers(Potential_Peers,new_peers_lim); // Get peers from potential peers
-        peers.concat(Arr);                    // Add them to the list of peers
+        .catch(function(error){console.error(error);})                         
     }
-    return peers;
+    return peers
 }
 
-module.exports.get_Blocks = function (peers){
-    let url = peers[0];
+async function get_Blocks(url){
     var status = 200;
     var index = 0;
     while(status != 404){
-        axios.get(url+'/add/'+ index.toString()).then(function(res){
+        await axios.get(url+'/add/'+ index.toString()).then(function(res){
+            console.log(index);
             status = res.status;
             var New_Block = new Block(res.data);
             New_Block.Update_Unused_Output();                           //Updates the Unused_Outputs.txt
@@ -45,16 +50,30 @@ module.exports.get_Blocks = function (peers){
     }
 }
 
-
-module.exports.get_Pending_Transaction = function (peers){
+async function get_Pending_Transaction(url){
     var Pending_Transactions = [];
-    let url = peers[0];
-    axios.get(url + '/getPendingTransactions').then(function(res){
+    await axios.get(url + '/getPendingTransactions').then(function(res){
         for(let Txn of res.data){
         Pending_Transactions.push(new Transaction(Txn.inputs,Txn.outputs,0));
         }
     })
     return Pending_Transactions;
+}
+
+module.exports.Initialize = async function (peers_arr,peers_lim,My_url) {
+    var peer = [],Pending_Transactions = [];
+
+    await get_Peers(peers_arr,peers_lim,My_url)
+    .then(function list(peers_list){peer = peers_list})
+    .catch(function(error){console.error(error)});
+
+    await get_Pending_Transaction(peer[0])
+    .then(function(Transactions_list){Pending_Transactions = Transactions_list})
+    .catch(function(error){console.error(error)});
+
+    //await get_Blocks(peer[0]);
+    
+    return [peer,Pending_Transactions];
 }
 
 module.exports.get_Hash = function(index,folder){

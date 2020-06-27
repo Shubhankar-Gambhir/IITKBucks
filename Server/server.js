@@ -9,12 +9,17 @@ const initialization = require('./function');
 
 let known_nodes = ['http://8c0090bc.ngrok.io' ,'http://52d3004ed431.ngrok.io'];//temporary urls
 var Index = 0
+var Index = 0
+var Pending_Transactions =[];
+var peers =[];
 
-// var peers = initialization.get_Peers(known_nodes);
-// var Pending_Transactions = initialization.get_Pending_Transaction(peers);
-// initialization.get_Blocks(peers);
-var Pending_Transactions = [];
-var peers = [];
+// initialization.Initialize(known_nodes,1,'http://localhost:'+port)
+// .then(function (Arr) {
+//     peers = Arr[0];
+//     Pending_Transactions = Arr[1];
+// })
+// .catch(function(error){console.error(error)});
+
 const app = express();
 
 app.use('getBlock',express.static('../Blocks',{ root : __dirname}));
@@ -43,7 +48,7 @@ app.get('/getPeers',function(req,res){
 
 app.post('/newPeer',function(req,res){
     var Is_peer_new = true;
-    if(peers.length <= 4) {                                 // Check if their is space for new peer
+    if(peers.length <= 2) {                                 // Check if their is space for new peer
         for(let peer of peers) {
             if(peer == req.body.url) {                      // Check if the peers is new or repeated
                 res.status(200).send('Peer already exist');
@@ -51,6 +56,7 @@ app.post('/newPeer',function(req,res){
             }
         }
         if(Is_peer_new){                                    // If peer is new it is added to the Array of peers
+            console.log("new Peer: " + req.body.url);
             peers.push(req.body.url);
             res.status(200).send('Peer Added');
         }
@@ -81,13 +87,13 @@ app.post('/newTransaction',function(req,res){
         res.send('Transaction Added');
     }
 })
-// app.post('/CreateBlock',function (req,res) {
-//     Index++
-//     var block = new Create_Block(Index,'0000f00000000000000000000000000000000000000000000000000000000000',Pending_Transactions,'../Blocks');
-//     console.log(block.Block_Buf)
-//     fs.writeFileSync('../Blocks/Block'+ Index+'.dat',block.Block_Buf);
-//     res.send(block);
-// })
+app.post('/CreateBlock',function (req,res) {
+    Index++
+    var block = new Create_Block(Index,'0000f00000000000000000000000000000000000000000000000000000000000',Pending_Transactions,'../Blocks');
+    console.log(block.Block_Buf)
+    fs.writeFileSync('../Blocks/Block'+ Index+'.dat',block.Block_Buf);
+    res.send(block);
+})
 
 
 var server = app.listen(8080, function () {
