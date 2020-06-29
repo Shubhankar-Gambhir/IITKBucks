@@ -47,7 +47,7 @@ async function get_Blocks(url){
             New_Block.Update_Unused_Output();                                                                           // Updates the Unused_Outputs.txt
             fs.writeFileSync('../Blocks/Block'+index.toString()+'.dat',res.data);                                       // Stores Block in memory
             index += 1; })
-        .catch(function(error){console.error(error);})                                                        // Updates the status if it is 404
+        .catch(function(error){status = error.response.status;})                                                        // Updates the status if it is 404
                                  
     }
     return index;
