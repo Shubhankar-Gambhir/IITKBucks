@@ -1,9 +1,12 @@
 const transaction = require('../../Read_Transaction/Read_Transaction_Classes/Read_Transaction');
+const crypto = require('crypto');
+const func = require('../../Server/function');
+const Hash = func.get_Hash;
 
 class Block{
     constructor(Byte){
         this.Head = Buffer.from(Byte).slice(0,116);
-        this.Byte = Buffer.from(Byte.slice(116));
+        this.Byte = Buffer.from(Byte).slice(116);
         this.Index = this.Head.slice(0,4).readUInt32BE(0);
         this.Parent_Hash = this.Head.slice(4,36).toString('hex');
         this.Body_Hash = this.Head.slice(36,68).toString('hex');
@@ -25,7 +28,7 @@ class Block{
     }
     Verify_Transactions(){
         flag = true;
-        for(var i = 0; i < this.Num_Transactions;i++) if(flag) flag = this.Transaction_Data[i].Verify_Transaction();
+        for(var i = 1; i < this.Num_Transactions;i++) if(flag) flag = this.Transaction_Data[i].Verify_Transaction();
         return flag;
     }
 
@@ -48,5 +51,16 @@ class Block{
         Arr = Arr.filter(function(item) {return !this.Transaction_Data.includes(item); })
         return Arr;
     }
+
+    Verify_Block(){
+        var flag = this.Verify_Transactions();
+        if(this.Parent_Hash != Hash(this.Index - 1)){flag = false;}
+        if(this.Body_Hash != crypto.createHash('SHA256').update(this.Byte).digest('hex')){flag = false;}
+        if(crypto.createHash('SHA256').update(this.Head).digest('hex') > this.Target){flag = false;}
+
+        return flag;
+    }
+
+
 }
 module.exports = Block;
