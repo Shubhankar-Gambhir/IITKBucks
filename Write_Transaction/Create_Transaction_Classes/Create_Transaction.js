@@ -1,49 +1,23 @@
 const crypto = require('crypto');
+const JSONbig = require('json-bigint')
 
-const input = require('./Create_Input');
-const output = require('./Create_Output');
+const Input_Data = require('./Input_Data');
+const Output_Data = require('./Output_Data');
 
 class transaction{
-    constructor(inputs,outputs,flag){
-        this.Num_Input = inputs.length;     //number of inputs
-        this.Num_Output = outputs.length;   //number of outputs
-        this.inputs = inputs;               //input array
-        this.outputs = outputs;             //output array
-        this.Create_Sign = flag;            //wether to create own signature
-        this.JSON = {                       //JSON format data
-            "inputs": this.inputs,
-            "outputs": this.outputs
-        };
+    constructor(inputs,outputs,flag,person){
+        this.Output_Data = new Output_Data(outputs);           
+        this.JSON = JSONbig.parse(JSONbig.stringify({                       //JSON format data
+            "inputs": inputs,
+            "outputs": outputs
+        }));
+        this.Output_Hash = crypto.createHash('SHA256').update(this.Output_Data.Buffer).digest('hex');
+        this.Input_Data = new Input_Data(this.Output_Hash,inputs,flag,person);    
+        this.Transaction_Fee = this.Input_Data.Total_Coins - this.Output_Data.Total_Coins ;
+        this.Buf = Buffer.from([...this.Input_Data.Buffer,...this.Output_Data.Buffer]);
         this.ID = crypto.createHash('SHA256').update(this.Buf).digest('hex');
         this.Size = this.Buf.byteLength;    //Size in bytes
-    }
-    get Input_Data(){
-        var Hash = crypto.createHash('SHA256').update(this.Output_Data).digest('hex');
-        var arr = [];
-        for (var i = 0;i < this.Num_Input;i++){
-            var new_Input = new input(Hash,this.inputs[i],this.Create_Sign);
-            arr.push(new_Input.Buffer);
-        }
-        return Buffer.concat(arr);
-    }
-    get Output_Data(){
-        var Output_buf = Buffer.alloc(4);
-        Output_buf.writeUInt32BE(this.Num_Output,0,4);
-        var arr = [Output_buf];
-        for (var i = 0;i < this.Num_Output;i++){
-            var new_Output = new output(this.outputs[i]);
-            arr.push(new_Output.Buffer);
-        }
-        return Buffer.concat(arr);
-    }
-    get Buf(){
-        var Input_buf = Buffer.alloc(4);
-        Input_buf.writeUInt32BE(this.Num_Input,0,4);
-        var Output_buf = Buffer.alloc(4);
-        Output_buf.writeUInt32BE(this.Num_Output,0,4);
-        var buf = [Input_buf,this.Input_Data,this.Output_Data];
-        buf = Buffer.concat(buf);
-        return buf;
+        this.Fee_to_Size_Ratio = Number(parseInt(this.Transaction_Fee.toString())/this.Size);
     }
 }
 

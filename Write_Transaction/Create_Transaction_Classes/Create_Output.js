@@ -3,7 +3,7 @@ const fs = require('fs');
 
 class output{
     constructor(output){
-        this.Coins = Number(output.amount);
+        this.Coins = BigInt(output.amount);
         this.Public_key = output.recipient;
         this.Length = Buffer.byteLength(this.Public_key,"utf-8");
     }

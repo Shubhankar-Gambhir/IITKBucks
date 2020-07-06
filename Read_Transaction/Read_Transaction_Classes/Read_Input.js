@@ -10,6 +10,7 @@ class input{
         this.Signature_length =  Buf.readUInt32BE(36);
         this.Signature = Buf.slice(40,40 +this.Signature_length).toString('hex');
     }
+    
     get Unused_Outputs(){ return parseJSON(fs.readFileSync('../Unused_Outputs.txt').toString().split(','));}
     get New_buf(){ return this.Buf.slice(this.Signature_length+40);}
     get Coins(){ return BigInt(this.Unused_Outputs.get(this.Transaction_ID).get(this.Index.toString()).get('Coin'));}
