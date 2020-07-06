@@ -1,6 +1,7 @@
 const axios = require('axios');
 const fs = require('fs');
 const crypto = require('crypto');
+const  getRawBody = require('raw-body');
 
 const Transaction = require('../Write_Transaction/Create_Transaction_Classes/Create_Transaction.js');
 const Block = require('../Block/Read_Block_Classes/Block.js');
@@ -40,16 +41,18 @@ async function get_Peers (known_nodes,used_urls,peers_lim,My_url){
 async function get_Blocks(url){
     var status = 200;
     var index = 0;
+
     while(status != 404){
         await axios.get(url+'/add/'+ index,{responseType: 'arraybuffer'})
         .then(function(res){                                                                                            // Asks a peer for Block
             var New_Block = new Block(res.data);
             New_Block.Update_Unused_Output();                                                                           // Updates the Unused_Outputs.txt
             fs.writeFileSync('../Blocks/Block'+index.toString()+'.dat',res.data);                                       // Stores Block in memory
-            index += 1; })
-        .catch(function(error){status = error.response.status;})                                                        // Updates the status if it is 404
-                                 
+            index = index + 1 ;
+            })
+        .catch(function(error){status = error.response.status})                                                         // Updates the status if it is 404
     }
+    console.log(index);
     return index;
 }
 
@@ -67,21 +70,23 @@ async function get_Pending_Transaction(url){
 }
 
 module.exports.Initialize = async function (peers_arr,peers_lim,My_url) {                                                 // All the above functions in 1 function 
-    var Peer = [],Pending_Transactions = [],index = 0;
+    var Peers = [],Pending_Transactions = [],Index = 0;
 
-    await get_Peers(peers_arr,Peer,peers_lim,My_url)                                                                      // Sets the Peers
-    .then(function list(peers_list){Peer = peers_list})
+    await get_Peers(peers_arr,Peers,peers_lim,My_url)                                                                      // Sets the Peers
+    .then(function list(peers_list){Peers = peers_list},function(error){console.error(error)})
     .catch(function(error){console.error(error)});
 
-    await get_Pending_Transaction(Peer[0])                                                                                // Sets Pending_Transactions
-    .then(function(Transactions_list){Pending_Transactions = Transactions_list})
+    await get_Pending_Transaction(Peers[0])                                                                                // Sets Pending_Transactions
+    .then(function(Transactions_list){Pending_Transactions = Transactions_list},function(error){console.error(error)})
     .catch(function(error){console.error(error)});
 
-    await get_Blocks(Peer[0])                                                                                             // Stores The Blocks in storage
-    .then(function (Index) { index = Index})                                                                              // and gives the current Index
+    await get_Blocks(Peers[0])                                                                                             // Stores The Blocks in storage
+    .then(function (index) { Index = index},function(error){console.error(error)})                                                                              // and gives the current Index
     .catch(function(error){console.error(error)});
 
-    return [Peer,Pending_Transactions,index];
+    var result = {Peers,Pending_Transactions,Index};
+
+    return result;
 }
 
 module.exports.get_Hash = function(index){
@@ -96,5 +101,60 @@ module.exports.get_Hash = function(index){
 module.exports.send_to_peers = function (peers,data,api) {
     for(let url of peers){
         axios.post(url+api,data)
+    }
+}
+
+module.exports.get_Transactions = function (Pending_Transactions,Size_Lim) {
+    var Transactions = [new Transaction([],[],0,null)];
+
+    if(Pending_Transactions.reduce((total, Txn) => total + Txn.Size,0) > Size_Lim){
+        Transactions = Pending_Transactions.sort(function(a,b){return b.Fee_to_Size_Ratio - a.Fee_to_Size_Ratio});
+        var Total_Size = 0;
+        Transactions = Transactions.filter(function(value){
+            Total_Size += value.Size;
+            return Total_Size < Size_Lim;
+        })
+    }
+    else{Transactions = Pending_Transactions;}
+    return Transactions ;    
+}
+
+module.exports.Buffer_req = function (req, res, next) {
+    if (req.headers['content-type'] === 'application/octet-stream') {
+        getRawBody(req, {
+            length: req.headers['content-length'],
+            encoding: req.charset
+        }, function (err, string) {
+            if (err)return next(err);
+            req.body = string;
+            next();
+        })
+    }
+    else {next();}
+}
+module.exports.get_Body_Hash = function(index){
+    var path =  __filename.split('IITKBucks')[0].toString() + 'IITKBucks/Blocks/'
+    var Byte = Buffer.from(fs.readFileSync(path+'Block'+index+'.dat'));
+    return crypto.createHash('SHA256').update(Byte.slice(116)).digest('hex');
+}
+module.exports.to_JSON = function(data) {
+    if (data !== undefined) {
+        let intCount = 0, repCount = 0;
+        const json = JSON.stringify(data, (_, v) => {
+            if (typeof v === 'bigint') {
+                intCount++;
+                return `${v}#bigint`;
+            }
+            return v;
+        });
+        const res = json.replace(/"(-?\d+)#bigint"/g, (_, a) => {
+            repCount++;
+            return a;
+        });
+        if (repCount > intCount) {
+            // You have a string somewhere that looks like "123#bigint";
+            throw new Error(`BigInt serialization pattern conflict with a string value.`);
+        }
+        return res;
     }
 }
