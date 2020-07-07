@@ -52,7 +52,6 @@ async function get_Blocks(url){
             })
         .catch(function(error){status = error.response.status})                                                         // Updates the status if it is 404
     }
-    console.log(index);
     return index;
 }
 
