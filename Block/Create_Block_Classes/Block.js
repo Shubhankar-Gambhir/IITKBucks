@@ -44,8 +44,8 @@ class Block{
             Buf = Buffer.concat([Buf,Buffer.from(txn.Buf)]);
             Arr.push(Buf);
         }
-        Arr = Buffer.concat(Arr);
-        return Arr;
+        var buf = Buffer.concat(Arr);
+        return buf;
     }
 
     Buf(i){
@@ -71,7 +71,6 @@ class Block{
             i += 1;
             buff = this.Buf(i)
             hash = crypto.createHash('SHA256').update(buff).digest('hex');
-            if(i%100000==0) console.log(i);
         }
 
         return buff;

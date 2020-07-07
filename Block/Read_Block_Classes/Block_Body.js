@@ -14,6 +14,7 @@ class Block{
         this.Time_Stamp = this.Head.slice(100,108).readBigUInt64BE(0);
         this.Nonce = this.Head.slice(108,116).readBigInt64BE(0);
         this.Mining_Fees = BigInt(Mining_Fees);
+        this.Header_Hash = crypto.createHash('SHA256').update(this.Head).digest('hex');
     }
     get Num_Transactions(){return this.Byte.slice(0,4).readUInt32BE(0);}
     get Transaction_Data(){
