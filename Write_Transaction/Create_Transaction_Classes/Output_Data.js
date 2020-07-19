@@ -17,9 +17,7 @@ class Output_Data{
 
     get Total_Coins(){
         var Coins = BigInt(0)
-        for (var i = 0;i < this.Num_Output;i++){
-            Coins += this.Output_Data_Arr[i].Coins ;
-        }
+        for (var i = 0;i < this.Num_Output;i++){Coins += this.Output_Data_Arr[i].Coins ;}
         return Coins ;
     }
 
@@ -32,6 +30,17 @@ class Output_Data{
         }
         var Arr = Buffer.concat(arr)
         return Buffer.from(Arr);
+    }
+    get outputs_Arr(){
+        var Arr = []
+        for (var i = 0;i < this.Num_Output;i++){Arr.push(this.Output_Data_Arr[i].json);}
+        return Arr ;
+    }
+
+    Update_Output_Map(O_Map,id){
+        var Output_Map = O_Map;
+        for(var i = 0;i < this.Num_Output;i++){Output_Map = this.Output_Data_Arr[i].Update_Output_Map(Output_Map,i,id);}
+        return Output_Map;
     }
 
 }
