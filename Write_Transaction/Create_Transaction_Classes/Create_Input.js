@@ -57,6 +57,15 @@ class input{
         OMap.set(this.Key,Arr);
         return OMap;
     }
+    Verify_Signature(Hbuf){
+        var byte = Buffer.concat([this.Buffer.slice(0,36),Hbuf])
+        var verify = crypto.createVerify('SHA256').update(byte).verify({key: this.Key, padding:crypto.constants.RSA_PKCS1_PSS_PADDING,saltLength:32}, this.Signature,'hex')
+        return verify;
+    }
+    Check_Inputs(){
+        if(this.Unused_Outputs.has(this.Transaction_ID)){return this.Unused_Outputs.get(this.Transaction_ID).has(this.Index.toString());}
+        else{ return false; }
+    }
 }
 
 module.exports = input;

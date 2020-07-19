@@ -1,4 +1,7 @@
 const input = require('./Create_Input');
+const crypto = require('crypto')
+var parseJSON = require('parse-json-object-as-map');
+const fs = require('fs')
 
 class Input_Data{
     constructor(hash,inputs,flag,key){
@@ -42,6 +45,25 @@ class Input_Data{
         var Output_Map = O_Map;
         for(var i = 0;i < this.Num_Input;i++){Output_Map = this.Input_Data_Arr[i].Update_Output_Map(Output_Map)}
         return Output_Map;
+    }
+    Verify(flag){
+        var Hash_Buf = Buffer.from(this.Hash,'hex');
+        for(var i = 0; i < this.Num_Input ;i++){
+            if(!this.Input_Data_Arr[i].Verify_Signature(Hash_Buf)){
+                flag = false;
+                console.log("Input "+i+" Signature not verified!")
+            }
+        }
+        return flag;
+    }
+    Check_Inputs(flag){
+        for(var i = 0; i < this.Num_Input;i++){
+            if(!this.Input_Data_Arr[i].Check_Inputs()){
+                flag = false;
+                console.log("Input "+i+" doesn't exist!")
+            }
+        }
+        return flag;
     }
 }
 

@@ -20,6 +20,18 @@ class transaction{
         O_map = this.Output_Data.Update_Output_Map(O_map,this.ID);
         return O_map;
     }
+    Verify_Transaction(){
+        var flag = true;
+
+        flag = this.Input_Data.Check_Inputs(flag);
+        flag = this.Input_Data.Verify(flag);
+        if(this.Transaction_Fee<0){
+            flag = false;
+            console.log("Spent more coins than used!");
+        }
+
+        return flag;
+    }
 }
 
 module.exports = transaction;
