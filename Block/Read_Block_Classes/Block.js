@@ -29,20 +29,24 @@ class Block{
         return Data_Arr;
     }
     Verify_Transactions(){
+        console.log('Verifying Transactions:')
         var flag = true;
         var Block_reward = this.Mining_Fees;
         for(var i = 1; i < this.Num_Transactions;i++){
             Block_reward += this.Transaction_Data[i].Transaction_Fee;
-            if(flag) {flag = this.Transaction_Data[i].Verify_Transaction();}
-        } 
-        if(this.Transaction_Data[0].Output_Data.Total_coins != Block_reward) {flag = false;}
-        return flag;
-    }
-    Verify_Block(){
-        var flag = this.Verify_Transactions();
-        if(this.Parent_Hash != Hash(this.Index - 1)){flag = false}
-        if(this.Body_Hash != crypto.createHash('SHA256').update(this.Byte).digest('hex')){flag = false}
-        if(crypto.createHash('SHA256').update(this.Head).digest('hex') > this.Target){flag = false}
+            if(flag) {
+                console.log('Transaction'+i+':')
+                flag = this.Transaction_Data[i].Verify_Transaction();
+            }
+        }
+        if(this.Transaction_Data[0].Output_Data.Total_coins != Block_reward) {
+            flag = false;
+            console.log('Wrong Block reward!')
+        }
+
+        if(flag){console.log('Transactions Verified!')}
+        else{console.log('Transactions not verified!')}
+
         return flag;
     }
 
@@ -68,10 +72,32 @@ class Block{
     }
 
     Verify_Block(){
+        console.log('Verifying Block:')
         var flag = this.Verify_Transactions();
-        if(this.Parent_Hash != Hash(this.Index - 1)){flag = false;return 'parent hash'}
-        if(this.Body_Hash != crypto.createHash('SHA256').update(this.Byte).digest('hex')){flag = false; return 'Body hash '}
-        if(crypto.createHash('SHA256').update(this.Head).digest('hex') > this.Target){flag = false;return 'nonce'}
+
+        console.log('Verifying Parent Hash:')
+        if(this.Parent_Hash != Hash(this.Index - 1)){
+            flag = false;
+            console.log('Hash not verified!')
+        }
+        else{console.log('Hash verified!')};
+
+        console.log('Verifying Body Hash:')
+        if(this.Body_Hash != crypto.createHash('SHA256').update(this.Byte).digest('hex')){
+            flag = false;
+            console.log('Hash not verified!')
+        }
+        else{console.log('Hash verified!')}
+
+        console.log('Verifying Nonce:')
+        if(crypto.createHash('SHA256').update(this.Head).digest('hex') > this.Target){
+            flag = false;
+            console.log('Nonce Incorrect!');
+        }
+        else{console.log('Nonce verified!')}
+
+        if(flag){console.log('Block Verified!')}
+        else{console.log('Block not verified!')}
 
         return flag;
     }
