@@ -10,16 +10,16 @@ class input{
         this.Signature_length =  Buf.readUInt32BE(36);
         this.Signature = Buf.slice(40,40 +this.Signature_length).toString('hex');
     }
-    
+
     get Unused_Outputs(){ return parseJSON(fs.readFileSync('../Unused_Outputs.txt').toString().split(','));}
     get New_buf(){ return this.Buf.slice(this.Signature_length+40);}
-    get Coins(){ return BigInt(this.Unused_Outputs.get(this.Transaction_ID).get(this.Index.toString()).get('Coin'));}
+    get Coins(){ return BigInt(this.Unused_Outputs.get(this.Transaction_ID).get((this.Index.toString())).get('Coin'));}
     get Key(){return this.Unused_Outputs.get(this.Transaction_ID).get(this.Index.toString()).get('Key');}
 
     Verify_Signature(Hbuf){
         var byte = Buffer.concat([this.Buf.slice(0,36),Hbuf])
-        var verify = crypto.createVerify('SHA256').update(byte).verify({key: this.Key, padding:crypto.constants.RSA_PKCS1_PSS_PADDING}, this.Signature,'hex')
-        return verify;        
+        var verify = crypto.createVerify('SHA256').update(byte).verify({key: this.Key, padding:crypto.constants.RSA_PKCS1_PSS_PADDING,saltLength:32}, this.Signature,'hex')
+        return verify;
     }
     Check_Inputs(){
         if(this.Unused_Outputs.has(this.Transaction_ID)){return this.Unused_Outputs.get(this.Transaction_ID).has(this.Index.toString());}
@@ -31,6 +31,20 @@ class input{
         console.log('       Index: ',this.Index);
         console.log('       Length of the signature: ',this.Signature_length);
         console.log('       Signature: ',this.Signature);
+    }
+    Update_Output_Map(OMap){
+        var ID = this.Transaction_ID;
+        var index = this.Index
+        var Arr = OMap.get(this.Key);
+
+        Arr = Arr.filter(function(a){
+            var c1 = a.transactionId == ID ;
+            var c2 = a.index == index;
+            return !(c1 && c2);
+        });
+
+        OMap.set(this.Key,Arr);
+        return OMap;
     }
 }
 

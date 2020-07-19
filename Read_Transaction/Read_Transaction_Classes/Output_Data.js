@@ -27,7 +27,12 @@ class Output_Data{
     }
     get Output_Data_Map(){
         var Output_Map = new Map();
-        for(var i = 0; i < this.Num_Output;i++){Output_Map.set(i+1,this.Output_Data_Arr[i].Output_Map);}
+        for(var i = 0; i < this.Num_Output;i++){Output_Map.set(i,this.Output_Data_Arr[i].Output_Map);}
+        return Output_Map;
+    }
+    Update_Output_Map(O_Map,id){
+        var Output_Map = O_Map;
+        for(var i = 0;i < this.Num_Output;i++){Output_Map = this.Output_Data_Arr[i].Update_Output_Map(Output_Map,i,id);}
         return Output_Map;
     }
 }

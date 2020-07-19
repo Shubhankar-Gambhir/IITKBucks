@@ -13,12 +13,24 @@ class output{
         Obj.set('Key',this.Key.toString());
         return Obj;
     }
+    
     Display(i){
         console.log('   Output ',i+1,': ');
         console.log('       Number of Coins:',Number(this.Coin));
         console.log('       Length of the public Key: ',this.Length)
         console.log('       Public key: ',this.Key);
     }  
+
+    Update_Output_Map(O_Map,i,id){
+        var transactionId = id;
+        var index = Number(i);
+        var amount = this.Coin.toString(); 
+        var output = {transactionId,index,amount};
+        var arr = O_Map.has(this.Key) ? O_Map.get(this.Key):[];
+        arr.push(output);
+        O_Map.set(this.Key,arr);
+        return(O_Map);
+    }
 }
 
 module.exports = output;

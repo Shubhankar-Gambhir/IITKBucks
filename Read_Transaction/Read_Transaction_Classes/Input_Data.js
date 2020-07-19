@@ -40,15 +40,20 @@ class Input_Data{
         }
         return Unused_Outputs;
     }
+    Update_Output_Map(O_Map){
+        var Output_Map = O_Map;
+        for(var i = 0;i < this.Num_Input;i++){Output_Map = this.Input_Data_Arr[i].Update_Output_Map(Output_Map)}
+        return Output_Map;
+    }
     Verify(flag){
         var Hash_Buf = Buffer.from(crypto.createHash('SHA256').update(this.Remaining_Buf).digest("hex"),'hex');
         for(var i = 0; i < this.Num_Input ;i++){if(!this.Input_Data_Arr[i].Verify_Signature(Hash_Buf)){flag = false;}}
         return flag;
-    } 
+    }
     Check_Inputs(flag){
         for(var i = 0; i < this.Num_Input;i++){if(!this.Input_Data_Arr[i].Check_Inputs()){flag = false;}}
         return flag;
-    } 
+    }
 }
 
 module.exports = Input_Data;
