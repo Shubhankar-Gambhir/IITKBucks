@@ -31,11 +31,12 @@ class Input_Data{
         return Coins;
     }
     get Updated_Map(){
-        var Unused_Outputs = parseJSON(fs.readFileSync('../Unused_Outputs.txt').toString().split(','));
-        for(var i = 0; i < this.Num_Input;i++){
-            Unused_Outputs.get(this.Input_Data_Arr[i].Transaction_ID).delete(this.Input_Data_Arr[i].Index.toString())
+        var Unused_Outputs = parseJSON(fs.readFileSync('../Unused_Outputs.txt').toString().split(','));                        // parsing JSON as map
+
+        for(var i = 0; i < this.Num_Input;i++){                                                                                // updating map by deleting used
+            Unused_Outputs.get(this.Input_Data_Arr[i].Transaction_ID).delete(this.Input_Data_Arr[i].Index.toString())          // entries
             if(Unused_Outputs.get(this.Input_Data_Arr[i].Transaction_ID).size == 0){
-                Unused_Outputs.delete(this.Input_Data_Arr[i].Transaction_ID);  
+                Unused_Outputs.delete(this.Input_Data_Arr[i].Transaction_ID);
             }
         }
         return Unused_Outputs;
@@ -47,11 +48,21 @@ class Input_Data{
     }
     Verify(flag){
         var Hash_Buf = Buffer.from(crypto.createHash('SHA256').update(this.Remaining_Buf).digest("hex"),'hex');
-        for(var i = 0; i < this.Num_Input ;i++){if(!this.Input_Data_Arr[i].Verify_Signature(Hash_Buf)){flag = false;}}
+        for(var i = 0; i < this.Num_Input ;i++){
+            if(!this.Input_Data_Arr[i].Verify_Signature(Hash_Buf)){
+                flag = false;
+                console.log("Input "+i+" Signature not verified!")
+            }
+        }
         return flag;
     }
     Check_Inputs(flag){
-        for(var i = 0; i < this.Num_Input;i++){if(!this.Input_Data_Arr[i].Check_Inputs()){flag = false;}}
+        for(var i = 0; i < this.Num_Input;i++){
+            if(!this.Input_Data_Arr[i].Check_Inputs()){
+                flag = false;
+                console.log("Input "+i+" doesn't exist!")
+            }
+        }
         return flag;
     }
 }
