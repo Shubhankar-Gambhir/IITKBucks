@@ -7,12 +7,12 @@ const Hash = func.get_Hash;
 const Transaction = require('../../Write_Transaction/Create_Transaction_Classes/Create_Transaction')
 
 class Block{
-    constructor(Index,Target,Transactions,Mining_Fee,person){
+    constructor(Index,Target,Transactions,Mining_Fee,key){
         this.Transactions = Transactions;
         this.Index = Index;
         this.Parent_Hash = Hash(Index - 1);
         this.Mining_Fee = BigInt(Mining_Fee);
-        this.Person = person;
+        this.PublicKey = key;
         this.Target = Target;
         this.Body_Hash = crypto.createHash('SHA256').update(this.Block_Body).digest('hex');
         this.Header_Buf = this.Header;
@@ -22,14 +22,11 @@ class Block{
     }
     get Block_Reward_Txn(){
         var Amt = this.Mining_Fee;
-        for(let txn of this.Transactions){
-            Amt += BigInt(txn.Transaction_Fee);
-        }
+        for(let txn of this.Transactions){Amt += BigInt(txn.Transaction_Fee);}
         var output = {};
         output.amount = Amt;
-        var Key_file = __filename.split('IITKBucks')[0].toString() + 'IITKBucks/Public_Keys/' + this.Person + '.pem';
-        output.recipient = fs.readFileSync(Key_file).toString();
-        var Txn = new Transaction([],[output],0,this.Person);
+        output.recipient = this.PublicKey;
+        var Txn = new Transaction([],[output],0,this.PublicKey);
         return Txn;
     }
 
@@ -64,6 +61,7 @@ class Block{
         return buf; 
     }
     get Header(){
+        console.log('Mining Started!');
         var i = 1;
         var buff = this.Buf(i)
         var hash = crypto.createHash('SHA256').update(buff).digest('hex');

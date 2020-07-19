@@ -56,18 +56,22 @@ class Block{
 
     Update_Pending_Transactions(Arr){
         var Txns = this.Transaction_Data
-        Arr = Arr.filter(function(e) {return !Txns; })
+        Arr = Arr.filter(function(v) {!Txns.reduce((acc,curr) => acc || (curr.Transaction_ID == v.Transaction_ID),false);})
         return Arr;
     }
 
     Verify_Block(){
         var flag = this.Verify_Transactions();
-        
         if(this.Parent_Hash != Hash(this.Index - 1)){flag = false;return 'parent hash'}
         if(this.Body_Hash != crypto.createHash('SHA256').update(this.Byte).digest('hex')){flag = false; return 'Body hash '}
         if(crypto.createHash('SHA256').update(this.Head).digest('hex') > this.Target){flag = false;return 'nonce'}
 
         return flag;
+    }
+    Update_Output_Map(O_Map){
+        var O_map = O_Map;
+        for(var i=this.Num_Transactions-1;i>=0;i--) {O_map = this.Transaction_Data[i].update_Output_Map(O_map)};
+        return O_map;
     }
 
 
