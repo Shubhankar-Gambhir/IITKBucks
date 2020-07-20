@@ -187,7 +187,7 @@ app.post('/newTransaction',function(req,res){
         for(let url in peers){
             Axios.post(url+'/newTransaction',{headers: {'Content-Type': 'application/json'}})
         }
-        funcs.send_to_peers(peers,N_Txn.JSON,'/newTransaction',{'Content-Type': 'application/json'},'post',)   // Sends it to peers
+        funcs.send_to_peers(peers,N_Txn.JSON,'/newTransaction',{'Content-Type': 'application/json'},'post','Transaction')   // Sends it to peers
 
         if(!Mining){
             process = fork('./mine.js');
