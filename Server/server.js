@@ -2,42 +2,60 @@ const express = require('express');
 const bodyParser = require ('body-parser');
 const fs = require('fs');
 const Axios = require('axios');
+const JSONbig = require('json-bigint')({'storeAsString': true});
+const prompt = require('prompt-sync')({sigint: true})
+const funcs = require('./function');
+
 const { fork } = require('child_process');
-const { SIGINT } = require('constants');
+
 const Transaction = require('../Write_Transaction/Create_Transaction_Classes/Create_Transaction.js');
 const Block = require('../Block/Read_Block_Classes/Block_Body');
-const funcs = require('./function');
-const JSONbig = require('json-bigint')({'storeAsString': true});
 
-let known_nodes = ['https://iitkbucks.pclub.in'],Index = 0,Pending_Transactions = [new Transaction([],[],0,null)];
-let Size_Lim = 100000,peers =[],Mining_Fee = 100000,Mining = false,My_url = 'https://15397fc7b4a2.ngrok.io';
-var key = fs.readFileSync('../Public_Keys/p0.pem').toString();
-let Target = '0000004000000000000000000000000000000000000000000000000000000000' ;
+let Index = 0,Pending_Transactions = [],Mining = false,peers =[];
+let My_url = prompt("Enter server's url: ");
+var port = Number(prompt('port: '));
+let file = prompt("Enter server's Public Key file: ")
+var key = fs.readFileSync(file).toString();
+let Size_Lim = Number(prompt("Enter peer limit: "));
+let Mining_Fee = BigInt(prompt('Enter Mining Fee: '));
+let Target = prompt('Enter Target Value: ') ;
 let alias_to_key = new Map,unused_outputs = new Map;
 var process = fork('./mine.js')
+var num_known_node = Number(prompt("Enter no of known nodes: "))
 
-funcs.Initialize(known_nodes,3,My_url,Mining_Fee)
-.then(function (Data) {
-    peers = Data.Peers;
-    Pending_Transactions = Data.Pending_Transactions;
-    Index = Data.Index;
-    unused_outputs = Data.O_map;
+var known_nodes = [];
+for(var i=0;i<num_known_node;i++){
+    var url = prompt('Enter url: ');
+    known_nodes.push(url);
+}
 
-    if(Pending_Transactions.length || Index == 0){
-        Transactions = funcs.get_Transactions(Pending_Transactions,Size_Lim)
-        var message = JSONbig.stringify({Index,Target,Transactions,Mining_Fee,key})
-        process.send(message)
-        Mining = true;
-        process.on('message', (message) => {
-            Axios.post(My_url+'/newBlock',Buffer.from(message.Buffer),{headers: {'Content-Type': 'application/octet-stream'}})
-            .catch(function(err){console.error(err);})
-            Index++;
-        });
-        Mining = false;
-    }
-    else process.kill();
-})
-.catch(function(error){console.error(error)});
+if(known_nodes.length){
+    funcs.Initialize(known_nodes,(Size_Lim/2),My_url,Mining_Fee)
+    .then(function (Data) {
+        peers = Data.Peers;
+        console.log(peers);
+        Pending_Transactions = Data.Pending_Transactions;
+        console.log(Pending_Transactions);
+        Index = Data.Index;
+        console.log('current index: ',Index);
+        unused_outputs = Data.O_map;
+
+        if(Pending_Transactions.length || Index == 0){
+            Transactions = funcs.get_Transactions(Pending_Transactions,Size_Lim)
+            var message = JSONbig.stringify({Index,Target,Transactions,Mining_Fee,key})
+            process.send(message)
+            Mining = true;
+            process.on('message', (message) => {
+                Axios.post(My_url+'/newBlock',Buffer.from(message.Buffer),{headers: {'Content-Type': 'application/octet-stream'}})
+                .catch(function(err){console.error(err);})
+                Index++;
+            });
+            Mining = false;
+        }
+        else process.kill();
+        })
+    .catch(function(error){console.error(error)});
+}
 
 const app = express();
 
@@ -125,7 +143,7 @@ app.post('/newBlock',function(req,res){
             New_Block.Update_Unused_Output();                                                    // 2) Updates Unused_Oututs.txt
             fs.writeFileSync('../Blocks/Block' + New_Block.Index +'.dat', req.body);             // 3) Stores the New Block
 
-            funcs.send_to_peers(peers,req.body,'/newBlock',{'Content-Type': 'application/octet-stream'},'post')
+            funcs.send_to_peers(peers,req.body,'/newBlock',{'Content-Type': 'application/octet-stream'},'post','Block')
             str ='Block Added';
 
 
@@ -138,7 +156,7 @@ app.post('/newBlock',function(req,res){
                 process.on('message', (message) => {
                     funcs.send_to_peers([My_url],Buffer.from(message.Buffer),'/newBlock',{headers: {'Content-Type': 'application/octet-stream'}});
                     Index ++
-                }); 
+                });
                 Mining = false;
             }
         }
@@ -157,15 +175,19 @@ app.post('/newBlock',function(req,res){
 })
 
 app.post('/newTransaction',function(req,res){
+    console.log('Transaction recieved')
     var N_Txn = new Transaction(req.body.inputs,req.body.outputs,0,key);
     var flag = Pending_Transactions.reduce((acc,a) => acc || (a.ID == N_Txn.ID),false);
-    if(flag) {res.send('Transaction Already Exist');}
-    else{
+    if(flag) {
+        console.log('Transaction Already Exist');
+        res.send('Transaction Already Exist');
+    }
+    else if(N_Txn.Verify_Transaction()){
         Pending_Transactions.push(N_Txn);                                                                   // Adds Transaction to Array of Pending_Transactions
         for(let url in peers){
             Axios.post(url+'/newTransaction',{headers: {'Content-Type': 'application/json'}})
         }
-        funcs.send_to_peers(peers,N_Txn.JSON,'/newTransaction',{'Content-Type': 'application/json'},'post')   // Sends it to peers
+        funcs.send_to_peers(peers,N_Txn.JSON,'/newTransaction',{'Content-Type': 'application/json'},'post',)   // Sends it to peers
 
         if(!Mining){
             process = fork('./mine.js');
@@ -185,9 +207,13 @@ app.post('/newTransaction',function(req,res){
         console.log('Transaction Added!')
         res.send('Transaction Added');
     }
+    else{
+        console.log('Transaction not verifed!')
+        res.send('Transaction not verifed!');
+    }
 })
 
-var server = app.listen(8080, function () {
+var server = app.listen(port, function () {
     var host = server.address().address;
     var port = server.address().port;
 

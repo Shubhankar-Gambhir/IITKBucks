@@ -9,27 +9,29 @@ const Transaction = require('../Write_Transaction/Create_Transaction_Classes/Cre
 const Block = require('../Block/Read_Block_Classes/Block.js');
 
 const  getRawBody = require('raw-body');
+const { url } = require('inspector');
 
 async function get_Peers(known_nodes,used_urls,peers_lim,My_url){
-    var Used = used_urls,peers = [];
+    let peers = [],res,len = known_nodes.length;
     console.log('Sending peer request to Potential Peers:')
-    var len = known_nodes.length;
+
     for(var i=0;i<len;i++){
-        url = known_nodes[i];
+        let url = known_nodes[i];
         var config = {
             method: 'post',
             url : url + '/newPeer',
             data : {"url": My_url},
             headers : {'Content-Type': 'application/json'}
         }
-        await axios(config)           // Get peers from peers_Arr
-        .then(function (res) {
-            if(peers.length < peers_lim){
+        try{
+            res = await axios(config);                                                                              // send request to potential peers
+            if(peers.length < peers_lim){                                                                           // Add them to the list of peers
                 peers.push(url);
                 console.log('new Peer: '+url);
-            }})                                         // Add them to the list of peers
-        //.catch(function(error){if(![500,404,502].includes(error.response.status)) console.error(error)})
-        Used.push(url);                                                                                          // Adds the url to the Array used_urls
+            }
+        }
+        catch{console.error('error in sending request to '+url)}
+        used_urls.push(url);                                                                                         // Adds the url to the Array used_urls
     }
 
     if(peers.length < peers_lim){
@@ -42,42 +44,45 @@ async function get_Peers(known_nodes,used_urls,peers_lim,My_url){
                 data : {"url": My_url},
                 headers : {"Content-Type": 'application/json'}
             }
-            await axios(config)                                                                         // Get potential peers from peers
-            .then(function(res){
-                Potential_Peers = [...Potential_Peers,...res.data.peers]})                             // Add them to the list of potential peers
-            //.catch(function(error){if(![502,404,500].includes(error.response.status))console.error(error.response)});
-        }
+            try{
+                res = await axios(config);                                                                             // Get potential peers from peers
+                Potential_Peers = [...Potential_Peers,...res.data.peers];                                              // Add them to the list of potential peers
+            }
+            catch{console.error('error in sending request to '+url)}}
+
 
         Potential_Peers = Potential_Peers.filter(function(value, index, self) {return self.indexOf(value) === index;}) // filter for unique elements
         Potential_Peers = Potential_Peers.filter(function(item) {return !used_urls.includes(item);})                   // remove already uesd elements
         Potential_Peers = Potential_Peers.filter(function(a) {return a != My_url;})                                    // remove self
+
         if(Potential_Peers.length){
-            await get_Peers(Potential_Peers,used_urls,peers_lim-peers.length,My_url)                                   // Get peers from potential peers
-            .then(function (Arr) {peers = [...peers,...Arr]})                                                          // Add them to the list of peers
-            //.catch(function(error){console.error(error);})
+            let Arr = await get_Peers(Potential_Peers,used_urls,peers_lim-peers.length,My_url)                          // Get peers from potential peers
+            peers = [...peers,...Arr]                                                                                   // Add them to the list of peers
         }
     }
 
-    return peers
+    return peers;
 }
 
 async function get_Blocks(url,Mining_Fee){
     var status = 200,index = 0,O_map = new Map();
     console.log('Asking Blocks froms ' +url);
     while(status != 404){
-        await axios.get(url+'/getBlock/'+ index,{responseType: 'arraybuffer'})
-        .then(function(res){                                                                                                // Asks a peer for Block
+        let res;
+        try{res = await axios.get(url+'/getBlock/'+ index,{responseType: 'arraybuffer'});}                                   // Asks a peer for Block
+        catch{status = 404}
+        if(status==200){
             var New_Block = new Block(res.data,Mining_Fee);
             if(New_Block.Verify_Block()){
+                New_Block.Display();
                 console.log('Block '+index+' added')
                 O_map = New_Block.Update_Output_Map(O_map);
                 New_Block.Update_Unused_Output();                                                                           // Updates the Unused_Outputs.txt
                 fs.writeFileSync('../Blocks/Block'+index.toString()+'.dat',res.data);                                       // Stores Block in memory
             }
             else{console.log('Block '+index+' Not Verified');}
-            index = index + 1 ;
-        })
-        .catch(function(error){status = 404;});                                                                             // Updates the status if it is 404
+            index = index + 1;
+        }
     }
     return {index,O_map};
 }
@@ -86,34 +91,20 @@ async function get_Pending_Transaction(url){
     console.log('Asking Pending Transactions from ' +url);
     var Pending_Transactions = [];
 
-    await axios.get(url + '/getPendingTransactions')                                                                        // Asks a peer for Pending_Transactions
-    .then(function(res){
-        for(let Txn of res.data){
-            Pending_Transactions.push(new Transaction(Txn.inputs,Txn.outputs,0));
-        }})
-    .catch(function(error){console.error(error);})
+    let res = await axios.get(url + '/getPendingTransactions')                                                               // Asks a peer for Pending_Transactions
+    for(let Txn of res.data){Pending_Transactions.push(new Transaction(Txn.inputs,Txn.outputs,0));}
 
     return Pending_Transactions;
 }
 
 module.exports.Initialize = async function (peers_arr,peers_lim,My_url,Mining_Fee) {                                          // All the above functions in 1 function 
     var Peers = [],Pending_Transactions = [],Index = 0,O_map = new Map;
-    if(peers_arr.length){
-        await get_Peers(peers_arr,Peers,peers_lim,My_url)                                                                         // Sets the Peers
-        .then(function list(peers_list){Peers = peers_list},function(error){console.error(error)})
-        .catch(function(error){console.error(error)});
 
-        await get_Blocks(peers_arr[0],Mining_Fee)                                                                                  // Stores The Blocks in storage
-        .then(function (obj){
-            Index = obj.index;
-            O_map = obj.O_map;
-        },function(error){console.error(error)})                                                                                   // and gives the current Index
-        .catch(function(error){console.error(error)});
-
-        await get_Pending_Transaction(peers_arr[0])                                                                                // Sets Pending_Transactions
-        .then(function(Transactions_list){Pending_Transactions = Transactions_list},function(error){console.error(error)})
-        .catch(function(error){console.error(error)});
-    }
+    Peers = await get_Peers(peers_arr,Peers,peers_lim,My_url)                                                                         // Sets the Peers
+    let obj = await get_Blocks(peers_arr[0],Mining_Fee)                                                                         // Stores The Blocks in storage
+    Index  = obj.index;
+    O_map = obj.O_map;
+    Pending_Transactions = await get_Pending_Transaction(peers_arr[0])                                                                // Sets Pending_Transactions
 
     var result = {Peers,Pending_Transactions,Index,O_map};
 
@@ -131,14 +122,16 @@ module.exports.get_Hash = function(index){
 
 module.exports.send_to_peers = function (peers,data,api,config,method,message) {
     for(let url of peers){
-        axios({
-            method: method,
-            url : url + api,
-            data : data,
-            headers : config
-        })
-        .then(function(res){console.log(message+' sent to '+url+' Succesfully!')})
-        .catch(function(error){console.log('Error in sending '+message+' to '+url)});
+        try{
+            let res = axios({
+                method: method,
+                url : url + api,
+                data : data,
+                headers : config
+            })
+            console.log(message+' sent to '+url+' Succesfully!');
+            console.log('response: '+res.data);
+        }catch{console.log('Error in sending '+message+' to '+url)}
     }
 }
 
@@ -207,15 +200,17 @@ module.exports.add_Alias = function(url,Key){
         var publicKey = fs.readFileSync(publicKey_file).toString();
     }
     else publicKey = Key;
-    axios.post(url + '/addAlias',{publicKey,alias},{headers: {'Content-Type': 'application/json'}})
-    .then(function(res){console.log('Alias Successfully Added')})
-    .catch(function(error){
+    try{
+        axios.post(url + '/addAlias',{publicKey,alias},{headers: {'Content-Type': 'application/json'}})
+        console.log('Alias Successfully Added')
+    }
+    catch{
         if(error.response.status==400) {
             console.log('Alias already in use, Try different Alias!!');
             func(url,publicKey);
         }
         else{console.error(error);}
-    })
+    }
 
 }
 
@@ -269,12 +264,12 @@ module.exports.check_Balance = async function(url,json){
         data: Json,
         headers: {"Content-Type": "application/json"}
     }
-    await Axios(options)
-    .then(function(res){
+    try{
+        let res = await Axios(options);
         arr = res.data.unusedOutputs;
         balance = arr.reduce((previousValue,currentValue)=>previousValue + BigInt(currentValue.amount),BigInt(0));
-    })
-    .catch(function(error){console.error(error)});
+    }catch{console.error(error)};
+
     return {"unusedOutputs":arr,balance};
 }
 
@@ -288,18 +283,17 @@ async function get_Okey(url){
                 url: url+"/getPublicKey",
                 data: {alias}
             }
-            await axios(options)
-            .then(function(res){
+            try{
+                let res = await Axios(options);
                 key = res.data.publicKey;
                 status = 200;
-            })
-            .catch(function(error){if(error.response.status!= 404) console.error(error)});
+            }catch{};
         }
     }
     else if(key == 'key'){
         while(key == 'key'){
             var key_file = prompt('Enter key file: ');
-            if(fs.existsSync) {key = fs.readFileSync(key_file).toString();}
+            if(fs.existsSync(key_file)) {key = fs.readFileSync(key_file).toString();}
             else console.log('Error!! Wrong File');
         }
     }
@@ -350,7 +344,10 @@ module.exports.make_transaction = async function(url){
     outputs = JSONbig.stringify(outputs);
     outputs = JSONbig.parse(outputs);
     var txn = new Transaction(inputs,outputs,1,privateKey);
-    console.log(txn.JSON);
-    console.log('Transaction sent to '+url+'/newTransaction');
-    axios.post(url+'/newTransaction',txn.JSON,{headers: {'Content-Type': 'application/json'}});
+    if(txn.Verify_Transaction()){
+        console.log(txn.JSON);
+        console.log('Transaction sent to '+url+'/newTransaction');
+        axios.post(url+'/newTransaction',txn.JSON,{headers: {'Content-Type': 'application/json'}});
+    }
+    else{console.log('Transaction not sent to '+url+'/newTransaction')}
 }
