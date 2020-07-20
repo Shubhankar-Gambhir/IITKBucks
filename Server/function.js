@@ -9,7 +9,6 @@ const Transaction = require('../Write_Transaction/Create_Transaction_Classes/Cre
 const Block = require('../Block/Read_Block_Classes/Block.js');
 
 const  getRawBody = require('raw-body');
-const { url } = require('inspector');
 
 async function get_Peers(known_nodes,used_urls,peers_lim,My_url){
     let peers = [],res,len = known_nodes.length;
@@ -130,7 +129,6 @@ module.exports.send_to_peers = function (peers,data,api,config,method,message) {
                 headers : config
             })
             console.log(message+' sent to '+url+' Succesfully!');
-            console.log('response: '+res.data);
         }catch{console.log('Error in sending '+message+' to '+url)}
     }
 }

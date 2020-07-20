@@ -5,6 +5,7 @@ const Axios = require('axios');
 const JSONbig = require('json-bigint')({'storeAsString': true});
 const prompt = require('prompt-sync')({sigint: true})
 const funcs = require('./function');
+const { SIGINT } = require('constants');
 
 const { fork } = require('child_process');
 
@@ -16,8 +17,9 @@ let My_url = prompt("Enter server's url: ");
 var port = Number(prompt('port: '));
 let file = prompt("Enter server's Public Key file: ")
 var key = fs.readFileSync(file).toString();
-let Size_Lim = Number(prompt("Enter peer limit: "));
-let Mining_Fee = BigInt(prompt('Enter Mining Fee: '));
+let Size_Lim = Number(prompt("Enter Block_Size limit: "));
+let peer_lim = Number(prompt("Enter peer limit: "))
+let Mining_Fee = prompt('Enter Mining Fee: ');
 let Target = prompt('Enter Target Value: ') ;
 let alias_to_key = new Map,unused_outputs = new Map;
 var process = fork('./mine.js')
@@ -30,12 +32,12 @@ for(var i=0;i<num_known_node;i++){
 }
 
 if(known_nodes.length){
-    funcs.Initialize(known_nodes,(Size_Lim/2),My_url,Mining_Fee)
+    funcs.Initialize(known_nodes,(peer_lim/2),My_url,Mining_Fee)
     .then(function (Data) {
         peers = Data.Peers;
-        console.log(peers);
+        console.log('peers: ',peers);
         Pending_Transactions = Data.Pending_Transactions;
-        console.log(Pending_Transactions);
+        console.log('Pending Transactions: ',Pending_Transactions);
         Index = Data.Index;
         console.log('current index: ',Index);
         unused_outputs = Data.O_map;
@@ -49,9 +51,9 @@ if(known_nodes.length){
                 Axios.post(My_url+'/newBlock',Buffer.from(message.Buffer),{headers: {'Content-Type': 'application/octet-stream'}})
                 .catch(function(err){console.error(err);})
                 Index++;
+                Mining = false;
             });
-            Mining = false;
-        }
+x        }
         else process.kill();
         })
     .catch(function(error){console.error(error)});
@@ -106,7 +108,7 @@ app.post('/newPeer',function(req,res){
 
     if(peers.includes(req.body.url)) {res.status(200).send('Peer already exist');}
     else {
-        if(peers.length <= 2){                                      // Check if their is space for new peer
+        if(peers.length <= peer_lim){                                      // Check if their is space for new peer
             console.log("new Peer: " + req.body.url);               // If peer is new & there is enough space peer is added to the Array of peers
             peers.push(req.body.url);
             res.status(200).send('Peer Added');
@@ -131,13 +133,13 @@ app.post('/newBlock',function(req,res){
 
     if(!fs.existsSync('../Blocks/Block' + New_Block.Index +'.dat')){
         if(New_Block.Verify_Block()){                                                            // Processing Block:
-            New_Block.Display();
             if(Mining){
                 process.kill(SIGINT);
                 console.log('Mining Terminated');
+                Mining = false;
             }
-            Mining = false;
-
+            
+            New_Block.Display();
             unused_outputs = New_Block.Update_Output_Map(unused_outputs);
             Pending_Transactions = New_Block.Update_Pending_Transactions(Pending_Transactions);  // 1) Updates Pending_Transactions
             New_Block.Update_Unused_Output();                                                    // 2) Updates Unused_Oututs.txt
@@ -145,19 +147,21 @@ app.post('/newBlock',function(req,res){
 
             funcs.send_to_peers(peers,req.body,'/newBlock',{'Content-Type': 'application/octet-stream'},'post','Block')
             str ='Block Added';
+            Index = New_Block.Index +1;
 
 
             if(Pending_Transactions.length){
                 Transactions = funcs.get_Transactions(Pending_Transactions,Size_Lim);
-                var message = ({Index,Target,Transactions,Mining_Fee,key});
+                var message = JSONbig.stringify({Index,Target,Transactions,Mining_Fee,key})
                 process = fork('./mine.js');
                 process.send(message);
                 Mining = true;
                 process.on('message', (message) => {
-                    funcs.send_to_peers([My_url],Buffer.from(message.Buffer),'/newBlock',{headers: {'Content-Type': 'application/octet-stream'}});
-                    Index ++
+                    Axios.post(My_url+'/newBlock',Buffer.from(message.Buffer),{headers: {'Content-Type': 'application/octet-stream'}})
+                    .catch(function(err){console.error(err);})
+                    Index++;
+                    Mining = false;
                 });
-                Mining = false;
             }
         }
         else{str = 'Block Not Verified';}
@@ -175,25 +179,20 @@ app.post('/newBlock',function(req,res){
 })
 
 app.post('/newTransaction',function(req,res){
-    console.log('Transaction recieved')
     var N_Txn = new Transaction(req.body.inputs,req.body.outputs,0,key);
     var flag = Pending_Transactions.reduce((acc,a) => acc || (a.ID == N_Txn.ID),false);
-    if(flag) {
-        console.log('Transaction Already Exist');
-        res.send('Transaction Already Exist');
-    }
+    if(flag) {res.send('Transaction Already Exist');}
     else if(N_Txn.Verify_Transaction()){
+        console.log('New Transaction recieved')
+        console.log('Transaction Added!')
         Pending_Transactions.push(N_Txn);                                                                   // Adds Transaction to Array of Pending_Transactions
-        for(let url in peers){
-            Axios.post(url+'/newTransaction',{headers: {'Content-Type': 'application/json'}})
-        }
         funcs.send_to_peers(peers,N_Txn.JSON,'/newTransaction',{'Content-Type': 'application/json'},'post','Transaction')   // Sends it to peers
 
         if(!Mining){
             process = fork('./mine.js');
 
             var Transactions = funcs.get_Transactions(Pending_Transactions,Size_Lim);
-            var message = funcs.to_JSON({Index,Target,Transactions,Mining_Fee,key});
+            var message = JSONbig.stringify({Index,Target,Transactions,Mining_Fee,key})
 
             process.send(message);
             Mining = true;
@@ -201,10 +200,9 @@ app.post('/newTransaction',function(req,res){
                 Axios.post(My_url+'/newBlock',Buffer.from(message.Buffer),{headers: {'Content-Type': 'application/octet-stream'}})
                 .catch(function(err){console.error(err);});
                 Index++
+                Mining = false;
             });
-            Mining = false;
         }
-        console.log('Transaction Added!')
         res.send('Transaction Added');
     }
     else{

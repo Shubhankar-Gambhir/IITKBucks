@@ -8,9 +8,9 @@ async function start_mining(Index,Target,Transactions,Mining_Fee,key){
 }
 
 process.on('message', async (message) => {
-    message = JSONbig.parse(message);
+    message = JSON.parse(message);
     var buffer = await start_mining(message.Index,message.Target,message.Transactions,message.Mining_Fee,message.key)
-    .catch(function(err){console.error(err)})
+    .catch(function(err){})
     console.log('Mining Completed');
     process.send({ Buffer: buffer});
     process.exit();
