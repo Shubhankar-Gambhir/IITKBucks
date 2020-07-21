@@ -42,8 +42,8 @@ Number of outputs: <an integer>
         Length of public key: <an integer>
         Public key: <in PEM format>
     ...
- ```
+   ```
  
-    It will be used in reading Block
+ It will be used in reading a Block
 
 
