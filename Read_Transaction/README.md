@@ -19,7 +19,7 @@ After Verification
 ##### 4) Dispay:
  * It will display the Transaction in the following format:
 ```
- Transaction ID: <in hex format>
+Transaction ID: <in hex format>
 Number of inputs: <an integer>
     Input 1:
         Transaction ID: <in hex format>
@@ -42,6 +42,7 @@ Number of outputs: <an integer>
         Length of public key: <an integer>
         Public key: <in PEM format>
     ...
+    
     ```
 
 
