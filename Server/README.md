@@ -9,6 +9,6 @@ It has 4 files:
    * get Balance
    * Transfer
    
-   **2) [interact.js](https://github.com/Shubhankar-Gambhir/IITKBucks/blob/master/Server/interact.js)** : It is for interaction with user.
+   **2) [mine.js](https://github.com/Shubhankar-Gambhir/IITKBucks/blob/master/Server/mine.js)** : It is for mining a block. It is run parallely on a different thread than server so that our server can accept requests while mining.
    
    
