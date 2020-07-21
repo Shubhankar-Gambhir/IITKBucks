@@ -1,11 +1,5 @@
 ## Read_Transaction
-It reads the .dat file which has the transaction in Binary format
-
-To run
-```
-$ node read.js
-```
-and then input the name of Transaction File
+It has class that take data of transaction in binary format 
 
 It will verify Transaction
 * All its inputs exist in our File of unused outputs.
