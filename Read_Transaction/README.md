@@ -11,7 +11,7 @@ It has class that take data in binary format and give details of transactions.
 After Verification
 
 #### 2) Update Unused_Outputs:
-* It will update our file [Unused_Outputs.txt](https://github.com/Shubhankar-Gambhir/IITKBucks/blob/c74183deb48233914beb335c80c6f8dbec92eca5/Unused_Outputs.txt) by adding new outputs and removing the outputs used as inputs.
+* It will update our file [Unused_Outputs.txt](https://github.com/Shubhankar-Gambhir/IITKBucks/blob/master/Unused_Outputs.txt) by adding new outputs and removing the outputs used as inputs.
 
 #### 3) Update Output_Map:
 * It will update Output map which has key wise unused outputs in the sae way as previous one by adding new outputs and removing the outputs used as inputs.
