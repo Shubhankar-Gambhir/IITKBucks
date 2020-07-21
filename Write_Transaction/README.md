@@ -1,9 +1,9 @@
 ## Write_Transaction
-creates a .dat file which has transaction encoded in binary format and stores in Transactions Folder
+*It has a class which creates a transaction from input and output arrays along with a key
 
-To run
-```
-$ node create.js
-```
+It is used in:
+* Storing pending Transactions on our server
+* Sending transactions through
+
 
         
